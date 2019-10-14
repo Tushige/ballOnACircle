@@ -1,0 +1,12 @@
+:root {
+  --ball-diameter: 50px;
+}
+.ball {
+  width: var(--ball-diameter);
+  height: var(--ball-diameter);
+  border-radius: 50%;
+  background-color: white;
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
