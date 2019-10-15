@@ -2,33 +2,86 @@ import React, { useState, useEffect, useRef } from 'react';
 import './Wheel.css';
 import Ball from '../Ball/Ball';
 
-var fps = 10; // target frame rate
-var frameDuration = 1000 / fps; // how long, in milliseconds, a regular frame should take to be drawn
-var time = 0; // time value, to be sent to shaders, for example
+
+var time = - Math.PI / 2; // time value, to be sent to shaders, for example
 var lastTime = 0; // when was the last frame drawn
 
 const WHEEL_RADIUS = 200;
+
+const BALL_CENTER_X = WHEEL_RADIUS;
+const BALL_CENTER_Y = WHEEL_RADIUS;
+
 const BALL_INIT_X = WHEEL_RADIUS;
 const BALL_INIT_Y = 0;
+
+const NUM_SLICES = 4;
+const fps = 60;
+const duration = 0.3;
+const numFrames = fps * duration;
+
+var distanceToTravel = 0;
+var distanceTraveled = 0;
+var distancePerFrame = 0;
+var anim = false;
+
+var prevPosition = {
+  x: BALL_INIT_X,
+  y: BALL_INIT_Y
+}
+function circumference(radius) {
+  return Math.PI * radius * 2;
+}
 function Wheel(props) {
   var [pos, setPos] = useState({ x: BALL_INIT_X, y: BALL_INIT_Y })
+  var [isAnimating, setAnimating] = useState(false);
+
+  function moveBall() {
+    distanceTraveled = 0;
+    distanceToTravel = circumference(WHEEL_RADIUS) / NUM_SLICES; // arclength
+    distancePerFrame = distanceToTravel / numFrames;
+    setAnimating(true);
+  }
+
   var reqAnimRef = useRef();
+
   function drawBall(elapsed) {
-    time += 0.05;
-    setPos((prevState) => {
-      return {
-        x: BALL_INIT_X + Math.cos(time) * WHEEL_RADIUS,
-        y: BALL_INIT_X + Math.sin(time) * WHEEL_RADIUS
-      };
-    })
+    if (isAnimating) {
+      if (distanceTraveled >= distanceToTravel) {
+        setAnimating(false);
+        cancelAnimationFrame(reqAnimRef.current); // TODO
+        return;
+      }
+      debugger;
+      const arcLength = distancePerFrame;
+      time += arcLength / WHEEL_RADIUS;
+      const newX = Math.cos(time) * WHEEL_RADIUS;
+      const newY = Math.sin(time) * WHEEL_RADIUS;
+
+      distanceTraveled += arcLength; // bug here. idk what it is
+
+      setPos((prevState) => {
+        return {
+          x: BALL_CENTER_X + newX,
+          y: BALL_CENTER_Y + newY
+        };
+      })
+    }
     reqAnimRef.current = requestAnimationFrame(drawBall);
   }
   useEffect(() => {
-    reqAnimRef.current = requestAnimationFrame(drawBall);
-    return () => cancelAnimationFrame(reqAnimRef.current)
-  }, [])
+    if (isAnimating) {
+      reqAnimRef.current = requestAnimationFrame(drawBall);
+      return () => {
+        reqAnimRef.current && cancelAnimationFrame(reqAnimRef.current)
+      }
+    }
+  }, [isAnimating])
   return (
-    <div className="wheel" style={{ width: WHEEL_RADIUS * 2, height: WHEEL_RADIUS * 2 }}><Ball pos={pos} /></div>
+    <>
+      <div className="wheel" style={{ width: WHEEL_RADIUS * 2, height: WHEEL_RADIUS * 2 }}><Ball pos={pos} /></div>
+      <button onClick={moveBall}>move ball</button>
+      {/* <h1>{isAnimating ? 'animating' : 'not animating'}</h1> */}
+    </>
   )
 }
 
