@@ -15,8 +15,8 @@ export function captureMouse(element) {
       x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
       y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
     }
-    mouse.x = x;
-    mouse.y = y;
+    mouse.x = x - element.offsetLeft;
+    mouse.y = y - element.offsetTop;
   }, false)
   return mouse;
 }
