@@ -1,3 +1,10 @@
+.wheel-container {
+  box-sizing: border-box;
+  width: 480px;
+  height: 480px;
+  padding: 40px;
+}
+
 .wheel {
   border-radius: 50%;
   border: 1px solid limegreen;

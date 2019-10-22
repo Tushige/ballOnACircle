@@ -4,45 +4,20 @@ import Ball from '../Ball/Ball';
 import { captureMouse } from '../../utils/mouse.js';
 
 var angle = - Math.PI / 2; // time value, to be sent to shaders, for example
-var thetaTraveled = 0;
-var lastTime = 0; // when was the last frame drawn
 
 const WHEEL_RADIUS = 200;
-
+const BALL_RADIUS = 25;
 const BALL_CENTER_X = WHEEL_RADIUS;
 const BALL_CENTER_Y = WHEEL_RADIUS;
 
 const BALL_INIT_X = WHEEL_RADIUS;
 const BALL_INIT_Y = 0;
+var quadrant = 0;
 
-const NUM_SLICES = 2;
-const fps = 60;
-const duration = 0.3;
-const numFrames = fps * duration;
-var easing = 0.1;
-
-var anim = false;
-
-var prevPosition = {
-  x: BALL_INIT_X,
-  y: BALL_INIT_Y
-}
 var quad = 1;
 var a, b, c, theta;
 function circumference(radius) {
   return Math.PI * radius * 2;
-}
-
-function getQuadrant(theta) {
-  if (theta <= 0 && theta > - Math.PI / 2) {
-    return 1;
-  } else if (theta <= - Math.PI / 2 && theta > -Math.PI) {
-    return 2;
-  } else if (theta >= Math.PI / 2 && theta < Math.PI) {
-    return 3;
-  } else {
-    return 2;
-  }
 }
 
 function distance(x1, y1, x2, y2, printIt) {
@@ -64,13 +39,47 @@ function radToDeg(theta) {
 
 var isMouseDown = false;
 var mouse = null;
+var prevMouse = null;
+var quad1Backwards = false;
+var quad2Backwards = false;
+var quad3Backwards = false;
+var quad4Backwards = false;
 
 function Wheel(props) {
   var [pos, setPos] = useState({ x: BALL_INIT_X, y: BALL_INIT_Y })
-  var [isAnimating, setAnimating] = useState(false);
-  var [isText, setText] = useState('hi component');
+
   var wheelEl = useRef(null);
 
+  function getQuadrant() {
+    if (pos.x > WHEEL_RADIUS && pos.y <= WHEEL_RADIUS) {
+      return 1;
+    } else if (pos.x <= WHEEL_RADIUS && pos.y < WHEEL_RADIUS) {
+      return 2;
+    } else if (pos.x < WHEEL_RADIUS && pos.y >= WHEEL_RADIUS) {
+      return 3;
+    } else if (pos.x >= WHEEL_RADIUS && pos.y > WHEEL_RADIUS) {
+      return 4;
+    }
+    return 'something went wrong';
+  }
+  function isMouseInBounds() {
+    if (mouse.x < 0 || mouse.x > WHEEL_RADIUS * 2 || mouse.y < 0 || mouse.y > WHEEL_RADIUS * 2) {
+      return false;
+    }
+    return true
+  }
+  function isMovingLeft() {
+    return mouse.x < prevMouse.x;
+  }
+  function isMovingRight() {
+    return mouse.x > prevMouse.x;
+  }
+  function isMovingUp() {
+    return mouse.y < prevMouse.y;
+  }
+  function isMovingDown() {
+    return mouse.y > prevMouse.y;
+  }
   function moveBall() {
     const mx = mouse.x;
     const my = mouse.y;
@@ -78,106 +87,104 @@ function Wheel(props) {
     b = distance(BALL_CENTER_X, BALL_CENTER_Y, pos.x, pos.y);
     c = distance(mx, my, pos.x, pos.y, true);
     theta = lawOfCosC(a, b, c);
-    setAnimating(true);
-  }
-  var reqAnimRef = useRef();
-
-  function drawBall(elapsed) {
-    console.log('drawing ball')
-    if (isAnimating) {
-      if (Math.abs(thetaTraveled - theta) <= 0.01) {
-        cancelAnimationFrame(reqAnimRef.current)
-        thetaTraveled = 0;
-        setAnimating(false);
-        return;
-      }
-      let thetaToTarget = theta - thetaTraveled;
-      let thetaPerFrame = thetaToTarget * easing;
-      angle += thetaPerFrame;
-      thetaTraveled += thetaPerFrame;
-      const newX = Math.cos(angle) * WHEEL_RADIUS;
-      const newY = Math.sin(angle) * WHEEL_RADIUS;
-      setPos((prevState) => {
-        return {
-          x: BALL_CENTER_X + newX,
-          y: BALL_CENTER_Y + newY
-        };
-      })
+    quadrant = getQuadrant();
+    quad1Backwards = false;
+    quad2Backwards = false;
+    quad3Backwards = false;
+    quad4Backwards = false;
+    if (quadrant === 1 && isMovingUp()) {
+      // console.log('quad 1 backwards')
+      quad1Backwards = true;
+      theta *= -1;
     }
-    reqAnimRef.current = requestAnimationFrame(drawBall);
+    else if (quadrant === 2 && isMovingDown()) {
+      // console.log('quad 2 backwards')
+      quad2Backwards = true
+      theta *= -1;
+    }
+    // else if (quadrant === 3 && mx >= pos.x && my > pos.y) {
+    else if (quadrant === 3 && isMovingDown()) {
+      // console.log('quad 3 backwards')
+      quad3Backwards = true;
+      theta *= -1;
+    }
+    else if (quadrant === 4 && isMovingUp()) {
+      // console.log('quad 4 backwards')
+      quad4Backwards = true;
+      theta *= -1;
+    }
+    console.log('moving')
+    angle += 0.05 * theta;
+    // console.log(`theta: ${theta}`)
+    // console.log(`(${pos.x},${pos.y})`)
+    // angle = theta;
+    const newX = Math.cos(angle) * WHEEL_RADIUS;
+    const newY = Math.sin(angle) * WHEEL_RADIUS;
+
+    setPos((prevState) => {
+      return {
+        x: BALL_CENTER_X + newX,
+        y: BALL_CENTER_Y + newY
+      };
+    })
   }
-
   useEffect(() => {
-    if (!mouse) return;
-    const mx = mouse.x;
-    const my = mouse.y;
-    a = distance(BALL_CENTER_X, BALL_CENTER_Y, mx, my);
-    b = distance(BALL_CENTER_X, BALL_CENTER_Y, pos.x, pos.y);
-    c = distance(mx, my, pos.x, pos.y, true);
-    theta = lawOfCosC(a, b, c);
-  }, [pos]);
-
-  useEffect(() => {
-    mouse = captureMouse(wheelEl.current);
-    window.addEventListener('mousemove', onMouseMove);
+    [mouse, prevMouse] = captureMouse(wheelEl.current);
   }, []);
-
   useEffect(() => {
-    console.log(`isAnimating: ${isAnimating}`)
-    if (isAnimating) {
-      console.log('starting animation')
-      reqAnimRef.current = requestAnimationFrame(drawBall);
-      return () => {
-        setAnimating(false)
-        reqAnimRef.current && cancelAnimationFrame(reqAnimRef.current)
-      }
+    window.addEventListener('mouseup', onMouseUp)
+    window.addEventListener('mousemove', onMouseMove);
+    return function () {
+      window.removeEventListener('mousemove', onMouseMove);
     }
-  }, [isAnimating])
+  }, [pos])
+
   function onMouseDown(e) {
     isMouseDown = true
-    // moveBall();
   }
   // has to be applied to the window object
   function onMouseUp(e) {
-    if (isMouseDown) {
-      isMouseDown = false;
-    }
+    isMouseDown = false;
   }
   function onMouseMove(e) {
     //only do stuff when mouse is down
-    if (isMouseDown) {
+    if (isMouseDown && isMouseInBounds()) {
       moveBall();
     }
   }
-  const monitor = mouse ? (
+  const monitor = pos && mouse ? (
     <div className="monitor">
-      <p>overallAngle: {radToDeg(angle)}</p>
-      <p>mouse: ({mouse.x}, {mouse.y})</p>
-      <p>quad: {quad}</p>
-      <p>pos: ({pos.x}, {pos.y})</p>
-      <p>a: {a}</p>
-      <p>b: {b}</p>
-      <p>c: {c}</p>
-      <p>thetaToTravel: {radToDeg(theta)}</p>
+      <p>quadrant: {quadrant}</p>
+      <p>theta: {radToDeg(theta)}</p>
+      <p>angle: {radToDeg(angle)}</p>
+      <p>mouse.x is greater than WHEEL_RADIUS : {mouse.x >= WHEEL_RADIUS ? 'true' : 'false'}</p>
+      <p>mouse.y is less than prevMouse.y : {mouse.y < prevMouse.y ? 'true' : 'false'}</p>
+      <p>quadrant 1 going backward {quad1Backwards ? 'YES' : 'NO'} </p>
+      <p>quadrant 2 going backward {quad2Backwards ? 'YES' : 'NO'} </p>
+      <p>quadrant 3 going backward {quad3Backwards ? 'YES' : 'NO'} </p>
+      <p>quadrant 4 going backward {quad4Backwards ? 'YES' : 'NO'} </p>
+      <p>mouse : ({mouse.x}, {mouse.y})</p>
+      <p>prevMouse : ({prevMouse.x}, {prevMouse.y})</p>
+      <p>pos : ({pos.x}, {pos.y})</p>
     </div>
-  ) : null
+  ) : null;
   return (
     <>
-      <div ref={wheelEl} className="wheel" style={{ width: WHEEL_RADIUS * 2, height: WHEEL_RADIUS * 2 }} onMouseUp={onMouseUp}>
-        <Ball pos={pos} onMouseDown={onMouseDown} />
+      <div className="wheel-container" ref={wheelEl}>
+        <div className="wheel" style={{ width: WHEEL_RADIUS * 2, height: WHEEL_RADIUS * 2 }}>
+          <Ball pos={pos} onMouseDown={onMouseDown} />
+        </div>
       </div>
-      <button onClick={moveBall}>move ball</button>
-      {/* <h1>{isMouseDown ? 'mousing' : 'not mousing'}</h1> */}
-
       {monitor}
+      <button onClick={moveBall}>move ball</button>
     </>
   )
 }
 
 export default Wheel;
 
-    /**
-     * 
-     * BUG: moveBall doesn't see the latest of pos. It always sees (200,0)
-     * This presents a challenge. How to give latest state values to callback functions
+        /**
+         * 
+         * BUG: moveBall doesn't see the latest of pos. It always sees (200,0)
+         * This presents a challenge. How to give latest state values to callback functions
  */
