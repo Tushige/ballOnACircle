@@ -26,7 +26,11 @@ function distance(x1, y1, x2, y2, printIt) {
 }
 
 function lawOfCosC(a, b, c) { // bug here
-  return Math.acos((Math.pow(a, 2) + Math.pow(b, 2) - Math.pow(c, 2)) / (2 * a * b));
+  const theta = Math.acos((Math.pow(a, 2) + Math.pow(b, 2) - Math.pow(c, 2)) / (2 * a * b));
+  if (isNaN(theta)) {
+    debugger;
+  }
+  return theta;
 }
 
 function degreesToRadians(theta) {
@@ -92,7 +96,7 @@ function Wheel(props) {
     quad2Backwards = false;
     quad3Backwards = false;
     quad4Backwards = false;
-    if (quadrant === 1 && isMovingUp()) {
+    if (quadrant === 1 && isMovingLeft()) {
       // console.log('quad 1 backwards')
       quad1Backwards = true;
       theta *= -1;
@@ -114,10 +118,9 @@ function Wheel(props) {
       theta *= -1;
     }
     console.log('moving')
-    angle += 0.05 * theta;
+    angle += theta;
     // console.log(`theta: ${theta}`)
-    // console.log(`(${pos.x},${pos.y})`)
-    // angle = theta;
+    console.log(`(${pos.x},${pos.y})`)
     const newX = Math.cos(angle) * WHEEL_RADIUS;
     const newY = Math.sin(angle) * WHEEL_RADIUS;
 
@@ -157,14 +160,15 @@ function Wheel(props) {
       <p>quadrant: {quadrant}</p>
       <p>theta: {radToDeg(theta)}</p>
       <p>angle: {radToDeg(angle)}</p>
-      <p>mouse.x is greater than WHEEL_RADIUS : {mouse.x >= WHEEL_RADIUS ? 'true' : 'false'}</p>
-      <p>mouse.y is less than prevMouse.y : {mouse.y < prevMouse.y ? 'true' : 'false'}</p>
+      <h3>BACKWARDS</h3>
       <p>quadrant 1 going backward {quad1Backwards ? 'YES' : 'NO'} </p>
       <p>quadrant 2 going backward {quad2Backwards ? 'YES' : 'NO'} </p>
       <p>quadrant 3 going backward {quad3Backwards ? 'YES' : 'NO'} </p>
       <p>quadrant 4 going backward {quad4Backwards ? 'YES' : 'NO'} </p>
       <p>mouse : ({mouse.x}, {mouse.y})</p>
       <p>prevMouse : ({prevMouse.x}, {prevMouse.y})</p>
+      <p>going up : ({mouse.y < prevMouse.y ? 'UP' : 'DOWN'})</p>
+      <p>going up : ({mouse.x < prevMouse.x ? 'LEFT' : 'RIGHT'})</p>
       <p>pos : ({pos.x}, {pos.y})</p>
     </div>
   ) : null;

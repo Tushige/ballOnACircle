@@ -30,13 +30,7 @@ export function captureMouse(element) {
     if (mouse.y !== my) {
       prevMouse.y = my;
     }
-    if (mouse.x < prevMouse.x) {
-      console.log('left')
-    } else if (mouse.x > prevMouse.x) {
-      console.log('right')
-    } else {
-      console.log('IDK')
-    }
+    console.log(`(${mouse.x}, ${mouse.y})`)
   }, false)
   return [mouse, prevMouse];
 }
